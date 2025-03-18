@@ -142,32 +142,7 @@ def analyze_candidate_response(response: str, question: str) -> Dict[str, Any]:
     Raises:
         ValueError: If Hugging Face client is not properly initialized
     """
-    # First, check if the response is relevant to the question
-    relevance_prompt = f"""Analyze if the candidate's response is relevant to the technical question.
-    Question: {question}
-    Response: {response}
-    
-    Provide a brief analysis of relevance (1-2 sentences) and a relevance score (0-10).
-    If the response is not relevant, explain why.
-    Format: [Score] [Brief Analysis]"""
-    
-    messages = [
-        {"role": "system", "content": "You are an expert technical interviewer analyzing response relevance."},
-        {"role": "user", "content": relevance_prompt}
-    ]
-    
-    relevance_analysis = make_api_request(messages, temperature=0.3, max_tokens=100)
-    
-    # If response is not relevant, return early with a warning
-    if "0" in relevance_analysis[:2] or "1" in relevance_analysis[:2] or "2" in relevance_analysis[:2]:
-        return {
-            "analysis": f"⚠️ Warning: Your response appears to be off-topic or not directly addressing the question.\n\nQuestion asked: {question}\n\nRelevance Analysis: {relevance_analysis}\n\nPlease provide a response that directly addresses the technical question.",
-            "timestamp": datetime.now().isoformat(),
-            "is_relevant": False
-        }
-    
-    # If response is relevant, proceed with detailed analysis
-    analysis_prompt = f"""Analyze the following candidate response to the technical question:
+    prompt = f"""Analyze the following candidate response to the technical question:
     Question: {question}
     Response: {response}
     
@@ -181,25 +156,23 @@ def analyze_candidate_response(response: str, question: str) -> Dict[str, Any]:
     
     messages = [
         {"role": "system", "content": "You are an expert technical interviewer analyzing candidate responses."},
-        {"role": "user", "content": analysis_prompt}
+        {"role": "user", "content": prompt}
     ]
     
     analysis = make_api_request(messages, temperature=0.3)
     
     return {
         "analysis": analysis,
-        "timestamp": datetime.now().isoformat(),
-        "is_relevant": True
+        "timestamp": datetime.now().isoformat()
     }
 
-def generate_follow_up_question(previous_response: str, context: Dict[str, Any], is_relevant: bool = True) -> str:
+def generate_follow_up_question(previous_response: str, context: Dict[str, Any]) -> str:
     """
     Generate a follow-up question based on the candidate's previous response.
     
     Args:
         previous_response (str): The candidate's previous response
         context (Dict[str, Any]): Conversation context including tech stack and previous questions
-        is_relevant (bool): Whether the previous response was relevant to the question
         
     Returns:
         str: A relevant follow-up question
@@ -207,25 +180,14 @@ def generate_follow_up_question(previous_response: str, context: Dict[str, Any],
     Raises:
         ValueError: If Hugging Face client is not properly initialized
     """
-    if not is_relevant:
-        # If the previous response was not relevant, ask the original question again
-        return f"Let's try that question again: {context['current_question']}"
-    
     prompt = f"""Based on the candidate's previous response and context, generate a relevant follow-up question:
     Previous Response: {previous_response}
     Context: {context}
     
-    Requirements:
-    1. The follow-up question must be directly related to the previous response
-    2. It should build upon the candidate's answer
-    3. If the previous response was incomplete, ask for clarification
-    4. If the response was comprehensive, ask about related concepts
-    5. Keep the question focused and specific
-    
     Generate a focused, relevant follow-up question that builds upon the previous response."""
     
     messages = [
-        {"role": "system", "content": "You are an expert technical interviewer generating focused follow-up questions."},
+        {"role": "system", "content": "You are an expert technical interviewer generating follow-up questions."},
         {"role": "user", "content": prompt}
     ]
     
@@ -240,15 +202,50 @@ def validate_candidate_info(info: Dict[str, Any]) -> Dict[str, Any]:
         
     Returns:
         Dict[str, Any]: Validated and formatted information
+        
+    Raises:
+        ValueError: If any mandatory field is missing or invalid
     """
+    # Check mandatory fields
+    mandatory_fields = {
+        "full_name": "Full Name",
+        "email": "Email",
+        "phone": "Phone",
+        "position": "Position Applied For",
+        "tech_stack": "Tech Stack"
+    }
+    
+    missing_fields = []
+    for field, display_name in mandatory_fields.items():
+        if not info.get(field, "").strip():
+            missing_fields.append(display_name)
+    
+    if missing_fields:
+        raise ValueError(f"Please fill in all mandatory fields: {', '.join(missing_fields)}")
+    
+    # Validate email format
+    email = info.get("email", "").strip().lower()
+    if not "@" in email or not "." in email:
+        raise ValueError("Please enter a valid email address")
+    
+    # Validate phone number (basic check)
+    phone = info.get("phone", "").strip()
+    if not phone.replace("-", "").replace("+", "").replace(" ", "").isdigit():
+        raise ValueError("Please enter a valid phone number")
+    
+    # Validate tech stack
+    tech_stack = [tech.strip() for tech in info.get("tech_stack", "").split(",") if tech.strip()]
+    if not tech_stack:
+        raise ValueError("Please enter at least one technology in the tech stack")
+    
     validated_info = {
         "full_name": info.get("full_name", "").strip(),
-        "email": info.get("email", "").strip().lower(),
-        "phone": info.get("phone", "").strip(),
+        "email": email,
+        "phone": phone,
         "experience": int(info.get("experience", 0)),
         "position": info.get("position", "").strip(),
         "location": info.get("location", "").strip(),
-        "tech_stack": [tech.strip() for tech in info.get("tech_stack", "").split(",") if tech.strip()]
+        "tech_stack": tech_stack
     }
     
     return validated_info 
