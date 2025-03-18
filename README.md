@@ -1,155 +1,110 @@
-# TalentScout - AI-Powered Technical Interview Assistant
+# Deployment Guide for TalentScout
 
-## Project Overview
-TalentScout is an intelligent chatbot designed to streamline the technical interview process. It leverages the power of AI to conduct initial candidate screenings, gather information, and assess technical proficiency. The chatbot provides a structured, consistent, and efficient way to evaluate candidates while offering real-time feedback and analysis.
+This guide provides instructions for deploying the TalentScout technical interview assistant application using Streamlit Cloud.
 
-### Key Features
-- 🤖 Automated candidate information gathering
-- 📝 Experience-based technical question generation
-- 🔍 Real-time response analysis
-- 💬 Interactive follow-up questions
-- 📊 Structured feedback system
-- 🎯 Tech stack-specific assessments
-- 👋 Personalized interview experience
+## Prerequisites
 
-## Installation Instructions
+Before deploying, ensure you have:
+- A Hugging Face API key
+- A GitHub account
+- Your code pushed to a GitHub repository
 
-### Prerequisites
-- Python 3.10 or higher
-- Hugging Face API key
-- Virtual environment (recommended)
+## Deployment Steps
 
-### Setup Steps
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/chakrateja70/talentScout-bot
-   cd talentscout
+### 1. Prepare Your Repository
+
+1. Make sure your repository has these files:
+   - `app.py` (main application file)
+   - `utils.py` (utility functions)
+   - `requirements.txt` (Python dependencies)
+   - `.gitignore` (to exclude sensitive files)
+
+2. Ensure your `requirements.txt` includes:
+   ```
+   streamlit==1.32.0
+   python-dotenv==1.0.1
+   requests>=2.32.3
+   huggingface-hub>=0.20.3
    ```
 
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+### 2. Deploy on Streamlit Cloud
+
+1. Go to [share.streamlit.io](https://share.streamlit.io)
+2. Sign in with your GitHub account
+3. Click "New app"
+4. Select your repository and branch
+5. Set the main file path to `app.py`
+6. Click "Deploy"
+
+### 3. Configure Environment Variables
+
+1. After deployment, go to your app's settings:
+   - Click the three dots menu (⋮) in the top right
+   - Select "Settings"
+   - Scroll down to "Secrets"
+
+2. Add your Hugging Face API key:
+   ```toml
+   HUGGINGFACE_API_KEY = "your_api_key_here"
    ```
 
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 4. Verify Deployment
 
-4. Create a `.env` file in the project root:
-   ```
-   HUGGINGFACE_API_KEY=your_api_key_here
-   ```
+1. Visit your deployed app URL (https://talentscout5484.streamlit.app/)
+2. Test the application:
+   - Fill in candidate information
+   - Start an interview
+   - Verify that questions are generated
+   - Check that responses are analyzed
 
-5. Run the application:
-   ```bash
-   streamlit run app.py
-   ```
+## Common Issues and Solutions
 
-## Usage Guide
+### 1. API Key Not Found
+If you see the error "HUGGINGFACE_API_KEY not found in environment variables":
+- Double-check that you've added the API key in Streamlit Cloud secrets
+- Verify the key format in secrets (should be in TOML format)
+- Make sure there are no extra spaces or quotes
 
-### Starting an Interview
-1. Fill in the candidate information in the sidebar:
-   - Full Name
-   - Email
-   - Phone
-   - Years of Experience
-   - Position Applied For
-   - Location
-   - Tech Stack (comma-separated)
+### 2. Dependencies Issues
+If you encounter dependency-related errors:
+- Check your `requirements.txt` file
+- Verify all required packages are listed
+- Make sure version numbers are compatible
 
-2. Click "Start Interview" to begin
+### 3. Application Errors
+If the app shows errors:
+- Check the Streamlit Cloud logs
+- Verify your code is working locally
+- Ensure all required files are in the repository
 
-### During the Interview
-- Respond to technical questions in the chat interface
-- Receive real-time feedback on your responses
-- Answer follow-up questions to demonstrate your knowledge
-- End the interview at any time by:
-  - Clicking the "End Interview" button
-  - Typing "exit", "quit", or "end interview"
+## Maintenance
 
-## Technical Details
+### 1. Updating the Application
+1. Make changes to your local code
+2. Commit and push to GitHub
+3. Streamlit Cloud will automatically redeploy
 
-### Libraries Used
-- `streamlit==1.32.0`: Web application framework
-- `deepseek-ai==0.1.0`: AI model integration
-- `python-dotenv==1.0.1`: Environment variable management
-- `httpx==0.25.2`: HTTP client
-- `requests==2.31.0`: HTTP requests
+### 2. Monitoring
+- Check the Streamlit Cloud dashboard for:
+  - App status
+  - Error logs
+  - Usage statistics
 
-### Model Details
-- **Model**: Mistral-7B-Instruct-v0.2
-- **Provider**: Hugging Face
-- **Capabilities**: 
-  - Natural language understanding
-  - Context-aware responses
-  - Technical knowledge assessment
-  - Response analysis
-
-### Architecture
-- **Frontend**: Streamlit-based UI
-- **Backend**: Python-based logic
-- **AI Integration**: Hugging Face API
-- **State Management**: Streamlit session state
-
-## Prompt Design
-
-### Information Gathering
-- Structured prompts for candidate information validation
-- Clear formatting requirements for input fields
-- Error handling for invalid inputs
-
-### Technical Questions
-- Experience-based question generation
-- Tech stack-specific content
-- Progressive difficulty based on experience level
-- Mix of theoretical and practical questions
-
-### Response Analysis
-- Structured analysis format
-- Technical accuracy assessment
-- Areas for improvement identification
-- Follow-up question generation
-
-## Challenges & Solutions
-
-### Challenge 1: Dynamic Question Generation
-**Problem**: Generating relevant questions based on varying experience levels and tech stacks.
-
-**Solution**: 
-- Implemented experience-based categorization and tech stack-specific question templates
-- Created difficulty levels (junior, mid-level, senior) with appropriate question counts
-- Ensured balanced coverage of all specified technologies
-
-### Challenge 2: Response Analysis
-**Problem**: Providing meaningful feedback on technical responses.
-
-**Solution**: 
-- Created structured analysis prompts that evaluate multiple aspects of the response
-- Implemented scoring system for technical accuracy
-- Added specific feedback for areas of improvement
-- Generated context-aware follow-up questions
-
-### Challenge 3: State Management
-**Problem**: Maintaining conversation context and interview progress.
-
-**Solution**: 
-- Utilized Streamlit's session state for persistent data management
-- Implemented proper state initialization and cleanup
-- Added state tracking for interview stages and messages
-- Created robust error handling for state transitions
-
-## Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-- Hugging Face for providing the AI model
-- Streamlit team for the excellent framework
-- All contributors and users of the project
+### 3. Security
+- Never commit API keys or sensitive data
+- Use Streamlit Cloud secrets for sensitive information
+- Regularly rotate your API keys
 
 ## Support
-For support, please open an issue in the GitHub repository or contact the maintainers. 
+
+For deployment support:
+1. Check the [Streamlit Cloud documentation](https://docs.streamlit.io/cloud)
+2. Review the [Hugging Face documentation](https://huggingface.co/docs)
+3. Visit the [Streamlit Community Forum](https://discuss.streamlit.io)
+
+## Additional Resources
+
+- [Streamlit Cloud Documentation](https://docs.streamlit.io/cloud)
+- [Hugging Face API Documentation](https://huggingface.co/docs)
+- [Streamlit Best Practices](https://docs.streamlit.io/knowledge-base)
+

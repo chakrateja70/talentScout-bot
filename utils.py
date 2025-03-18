@@ -96,6 +96,65 @@ def make_api_request(messages: List[Dict[str, str]], temperature: float = 0.7, m
     
     return response
 
+def evaluate_answer_satisfaction(response: str, question: str) -> Dict[str, Any]:
+    """
+    Evaluate if the candidate's answer is satisfactory.
+    
+    Args:
+        response (str): The candidate's response
+        question (str): The technical question asked
+        
+    Returns:
+        Dict[str, Any]: Evaluation results including:
+            - is_satisfactory (bool): Whether the answer is satisfactory
+            - score (int): Score from 0-10
+            - feedback (str): Detailed feedback
+    """
+    prompt = f"""Evaluate the candidate's response to the technical question:
+    Question: {question}
+    Response: {response}
+    
+    Provide a structured evaluation including:
+    1. Technical accuracy (0-10)
+    2. Completeness of the answer
+    3. Clarity of explanation
+    4. Whether the answer is satisfactory (true/false)
+    
+    Format the response as:
+    Score: [number]
+    Satisfactory: [true/false]
+    Feedback: [detailed feedback]"""
+    
+    messages = [
+        {"role": "system", "content": "You are an expert technical interviewer evaluating candidate responses."},
+        {"role": "user", "content": prompt}
+    ]
+    
+    evaluation = make_api_request(messages, temperature=0.3)
+    
+    # Parse the evaluation response
+    lines = evaluation.split('\n')
+    score = 0
+    is_satisfactory = False
+    feedback = ""
+    
+    for line in lines:
+        if line.startswith("Score:"):
+            try:
+                score = int(line.split(":")[1].strip())
+            except:
+                pass
+        elif line.startswith("Satisfactory:"):
+            is_satisfactory = line.split(":")[1].strip().lower() == "true"
+        elif line.startswith("Feedback:"):
+            feedback = line.split(":")[1].strip()
+    
+    return {
+        "is_satisfactory": is_satisfactory,
+        "score": score,
+        "feedback": feedback
+    }
+
 def generate_technical_questions(tech_stack: List[str], experience: int) -> List[str]:
     """
     Generate technical questions based on the candidate's tech stack and experience level.
@@ -204,19 +263,18 @@ def analyze_candidate_response(response: str, question: str) -> Dict[str, Any]:
         "timestamp": datetime.now().isoformat()
     }
 
-def generate_follow_up_question(previous_response: str, context: Dict[str, Any]) -> str:
+def generate_follow_up_question(previous_response: str, context: Dict[str, Any], is_satisfactory: bool = False) -> str:
     """
     Generate a follow-up question based on the candidate's previous response.
     
     This function creates a relevant follow-up question that:
-    - Builds upon the candidate's previous answer
-    - Explores related concepts
-    - Tests deeper understanding
-    - Maintains conversation flow
+    - Builds upon the candidate's previous answer if not satisfactory
+    - Moves to a new topic if the previous answer was satisfactory
     
     Args:
         previous_response (str): The candidate's previous response
         context (Dict[str, Any]): Conversation context including tech stack and previous questions
+        is_satisfactory (bool): Whether the previous answer was satisfactory
         
     Returns:
         str: A relevant follow-up question
@@ -224,11 +282,27 @@ def generate_follow_up_question(previous_response: str, context: Dict[str, Any])
     Raises:
         ValueError: If Hugging Face client is not properly initialized
     """
-    prompt = f"""Based on the candidate's previous response and context, generate a relevant follow-up question:
-    Previous Response: {previous_response}
-    Context: {context}
-    
-    Generate a focused, relevant follow-up question that builds upon the previous response."""
+    if is_satisfactory:
+        # Generate a new question from a different topic
+        tech_stack = context.get("tech_stack", [])
+        prompt = f"""Generate a new technical question from a different topic.
+        The candidate is familiar with: {', '.join(tech_stack)}
+        
+        Requirements:
+        1. Choose a different topic than the previous question
+        2. Match the candidate's experience level
+        3. Test a different aspect of their knowledge
+        4. Format as a clear, concise question
+        
+        Previous question was about: {context.get('current_question', '')}
+        """
+    else:
+        # Generate a follow-up question to explore the current topic further
+        prompt = f"""Based on the candidate's previous response, generate a follow-up question to explore the topic further:
+        Previous Response: {previous_response}
+        Context: {context}
+        
+        Generate a focused, relevant follow-up question that builds upon the previous response."""
     
     messages = [
         {"role": "system", "content": "You are an expert technical interviewer generating follow-up questions."},
