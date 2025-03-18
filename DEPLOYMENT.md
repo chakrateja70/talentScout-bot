@@ -47,6 +47,18 @@ Before deploying, ensure you have:
    ```toml
    HUGGINGFACE_API_KEY = "your_api_key_here"
    ```
+   Note: Make sure to:
+   - Remove any quotes around the API key
+   - Don't include any spaces before or after the equals sign
+   - Use the exact key format shown above
+   - Click "Save" after adding the secret
+
+3. Verify the API key is set:
+   - The app should now load without the "HUGGINGFACE_API_KEY not found" error
+   - If you still see the error, try:
+     - Refreshing the app
+     - Checking if the secret was saved correctly
+     - Verifying the API key is valid
 
 ### 4. Verify Deployment
 
@@ -65,13 +77,20 @@ If you see the error "HUGGINGFACE_API_KEY not found in environment variables":
 - Verify the key format in secrets (should be in TOML format)
 - Make sure there are no extra spaces or quotes
 
-### 2. Dependencies Issues
+### 2. Import Errors
+If you see import errors like "cannot import name 'evaluate_answer_satisfaction' from 'utils'":
+- Ensure all files are properly committed and pushed to GitHub
+- Check that the file structure matches the repository
+- Verify that the function exists in the specified file
+- Try redeploying the application
+
+### 3. Dependencies Issues
 If you encounter dependency-related errors:
 - Check your `requirements.txt` file
 - Verify all required packages are listed
 - Make sure version numbers are compatible
 
-### 3. Application Errors
+### 4. Application Errors
 If the app shows errors:
 - Check the Streamlit Cloud logs
 - Verify your code is working locally

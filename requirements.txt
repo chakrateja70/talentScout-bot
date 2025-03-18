@@ -1,4 +1,6 @@
-streamlit==1.32.0
+streamlit>=1.32.0
 python-dotenv==1.0.1
 requests>=2.32.3
-huggingface-hub>=0.20.3 
+huggingface-hub>=0.20.3
+python-dateutil>=2.9.0
+typing-extensions>=4.12.2 
