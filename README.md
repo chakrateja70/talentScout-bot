@@ -30,7 +30,7 @@ TalentScout is an intelligent technical interview assistant that leverages AI to
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/talentscout-bot.git
+   git clone https://github.com/chakrateja70/talentScout-bot
    cd talentscout-bot
    ```
 
