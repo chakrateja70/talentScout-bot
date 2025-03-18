@@ -17,7 +17,7 @@ from utils import (
     generate_follow_up_question,
     validate_candidate_info
 )
-
+import os
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -87,7 +87,7 @@ with st.sidebar:
                 validated_info = validate_candidate_info(candidate_info)
                 st.session_state.candidate_info = validated_info
                 st.session_state.interview_stage = "technical"
-                st.experimental_rerun()
+                st.rerun()
             except ValueError as e:
                 st.error(str(e))
     
@@ -106,7 +106,7 @@ with st.sidebar:
             st.session_state.current_question = None
             st.session_state.candidate_info = None
             st.session_state.greeting_sent = False
-            st.experimental_rerun()
+            st.rerun()
 
 # Main interview interface
 if st.session_state.interview_stage == "technical":
@@ -138,7 +138,7 @@ Let's begin!"""
             "content": greeting
         })
         st.session_state.greeting_sent = True
-        st.experimental_rerun()
+        st.rerun()
     
     # Generate initial technical questions if none exist
     if not st.session_state.current_question:
@@ -151,7 +151,7 @@ Let's begin!"""
             "role": "assistant",
             "content": f"Let's start with this technical question:\n\n{st.session_state.current_question}"
         })
-        st.experimental_rerun()
+        st.rerun()
     
     # Chat input for candidate response
     if prompt := st.chat_input("Type your response here..."):
@@ -161,7 +161,7 @@ Let's begin!"""
                 "role": "assistant",
                 "content": "Thank you for your time! The interview has been ended. You can start a new interview by clicking the 'End Interview' button in the sidebar."
             })
-            st.experimental_rerun()
+            st.rerun()
         
         # Add candidate's response to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
@@ -184,4 +184,4 @@ Let's begin!"""
         # Update current question for next iteration
         st.session_state.current_question = follow_up
         
-        st.experimental_rerun()
+        st.rerun()
