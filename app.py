@@ -55,13 +55,13 @@ with st.sidebar:
     
     if st.session_state.interview_stage == "initial":
         candidate_info = {
-            "full_name": st.text_input("Full Name *"),
-            "email": st.text_input("Email *"),
-            "phone": st.text_input("Phone *"),
-            "experience": st.number_input("Years of Experience", min_value=0, max_value=50),
-            "position": st.text_input("Position Applied For *"),
-            "location": st.text_input("Location"),
-            "tech_stack": st.text_input("Tech Stack (comma-separated) *")
+            "full_name": st.text_input("Full Name *", placeholder="John Doe"),
+            "email": st.text_input("Email *", placeholder="john.doe@example.com"),
+            "phone": st.text_input("Phone *", placeholder="+91 XXXXX XXXXX"),
+            "experience": st.number_input("Years of Experience", min_value=0, max_value=50, value=0),
+            "position": st.text_input("Position Applied For *", placeholder="Senior Software Engineer"),
+            "location": st.text_input("Location", placeholder="New York, NY"),
+            "tech_stack": st.text_input("Tech Stack (comma-separated) *", placeholder="Python, JavaScript, React, Node.js")
         }
         
         if st.button("Start Interview"):
