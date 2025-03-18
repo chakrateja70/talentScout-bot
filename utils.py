@@ -1,3 +1,17 @@
+"""
+Utility functions for the TalentScout technical interview assistant.
+
+This module provides core functionality for:
+- Managing Hugging Face API interactions
+- Generating technical interview questions
+- Analyzing candidate responses
+- Validating candidate information
+- Generating follow-up questions
+
+The module uses the Mistral-7B-Instruct-v0.2 model from Hugging Face for
+AI-powered question generation and response analysis.
+"""
+
 import os
 from typing import List, Dict, Any
 import requests
@@ -5,15 +19,19 @@ from dotenv import load_dotenv
 from datetime import datetime
 from huggingface_hub import InferenceClient
 
-# Load environment variables
+# Load environment variables from .env file
 load_dotenv()
 
 def get_huggingface_client():
     """
     Initialize and return Hugging Face client.
     
+    This function creates a new InferenceClient instance using the API key
+    from environment variables. It is used for all AI-powered operations
+    in the application.
+    
     Returns:
-        InferenceClient: Hugging Face client
+        InferenceClient: Initialized Hugging Face client
         
     Raises:
         ValueError: If HUGGINGFACE_API_KEY is not set in environment variables
@@ -26,7 +44,7 @@ def get_huggingface_client():
         )
     return InferenceClient(token=api_key)
 
-# Initialize Hugging Face client
+# Initialize Hugging Face client globally
 try:
     client = get_huggingface_client()
 except ValueError as e:
@@ -36,20 +54,26 @@ except ValueError as e:
 
 def make_api_request(messages: List[Dict[str, str]], temperature: float = 0.7, max_tokens: int = 500) -> str:
     """
-    Make a request to the Hugging Face API.
+    Make a request to the Hugging Face API for text generation.
+    
+    This function formats the conversation messages into a prompt and sends
+    it to the Mistral-7B-Instruct-v0.2 model for processing.
     
     Args:
-        messages (List[Dict[str, str]]): List of message dictionaries
-        temperature (float): Temperature for response generation
-        max_tokens (int): Maximum tokens in response
+        messages (List[Dict[str, str]]): List of message dictionaries with 'role' and 'content' keys
+        temperature (float): Controls randomness in the response (0.0 to 1.0)
+        max_tokens (int): Maximum number of tokens in the generated response
         
     Returns:
-        str: Generated response text
+        str: Generated response text from the model
+        
+    Raises:
+        ValueError: If Hugging Face client is not initialized
     """
     if not client:
         raise ValueError("Hugging Face client not initialized. Please check your API key.")
     
-    # Convert messages to prompt format
+    # Convert messages to prompt format using Mistral's instruction format
     prompt = "<s>[INST] "
     for message in messages:
         if message["role"] == "system":
@@ -60,14 +84,14 @@ def make_api_request(messages: List[Dict[str, str]], temperature: float = 0.7, m
             prompt += f"Assistant: {message['content']}\n"
     prompt += " [/INST]"
     
-    # Make the API request
+    # Make the API request with optimized parameters
     response = client.text_generation(
         prompt,
         model="mistralai/Mistral-7B-Instruct-v0.2",
         max_new_tokens=max_tokens,
         temperature=temperature,
-        top_p=0.95,
-        repetition_penalty=1.15
+        top_p=0.95,  # Nucleus sampling parameter
+        repetition_penalty=1.15  # Penalty for repeating tokens
     )
     
     return response
@@ -76,17 +100,23 @@ def generate_technical_questions(tech_stack: List[str], experience: int) -> List
     """
     Generate technical questions based on the candidate's tech stack and experience level.
     
+    This function creates a balanced set of technical questions that:
+    - Match the candidate's experience level (junior/mid-level/senior)
+    - Cover all specified technologies
+    - Include both theoretical and practical questions
+    - Progress in difficulty based on experience
+    
     Args:
         tech_stack (List[str]): List of technologies the candidate is familiar with
         experience (int): Years of experience of the candidate
         
     Returns:
-        List[str]: List of technical questions
+        List[str]: List of technical questions tailored to the candidate
         
     Raises:
         ValueError: If Hugging Face client is not properly initialized
     """
-    # Determine experience level
+    # Determine experience level and question parameters
     if experience < 2:
         level = "junior"
         question_count = 3
@@ -132,13 +162,21 @@ def analyze_candidate_response(response: str, question: str) -> Dict[str, Any]:
     """
     Analyze the candidate's response to a technical question.
     
+    This function evaluates the candidate's response based on:
+    - Technical accuracy
+    - Clarity of explanation
+    - Depth of understanding
+    - Areas for improvement
+    
     Args:
-        response (str): The candidate's response
-        question (str): The technical question asked
+        response (str): The candidate's response text
+        question (str): The technical question that was asked
         
     Returns:
-        Dict[str, Any]: Analysis results including score and feedback
-        
+        Dict[str, Any]: Analysis results including:
+            - analysis: Detailed feedback and assessment
+            - timestamp: ISO format timestamp of the analysis
+            
     Raises:
         ValueError: If Hugging Face client is not properly initialized
     """
@@ -159,7 +197,7 @@ def analyze_candidate_response(response: str, question: str) -> Dict[str, Any]:
         {"role": "user", "content": prompt}
     ]
     
-    analysis = make_api_request(messages, temperature=0.3)
+    analysis = make_api_request(messages, temperature=0.3)  # Lower temperature for more consistent analysis
     
     return {
         "analysis": analysis,
@@ -169,6 +207,12 @@ def analyze_candidate_response(response: str, question: str) -> Dict[str, Any]:
 def generate_follow_up_question(previous_response: str, context: Dict[str, Any]) -> str:
     """
     Generate a follow-up question based on the candidate's previous response.
+    
+    This function creates a relevant follow-up question that:
+    - Builds upon the candidate's previous answer
+    - Explores related concepts
+    - Tests deeper understanding
+    - Maintains conversation flow
     
     Args:
         previous_response (str): The candidate's previous response
@@ -197,8 +241,14 @@ def validate_candidate_info(info: Dict[str, Any]) -> Dict[str, Any]:
     """
     Validate and format candidate information.
     
+    This function performs comprehensive validation of candidate information:
+    - Checks for required fields
+    - Validates email format
+    - Validates phone number format
+    - Formats and normalizes input data
+    
     Args:
-        info (Dict[str, Any]): Raw candidate information
+        info (Dict[str, Any]): Raw candidate information dictionary
         
     Returns:
         Dict[str, Any]: Validated and formatted information
@@ -206,7 +256,7 @@ def validate_candidate_info(info: Dict[str, Any]) -> Dict[str, Any]:
     Raises:
         ValueError: If any mandatory field is missing or invalid
     """
-    # Check mandatory fields
+    # Define mandatory fields and their display names
     mandatory_fields = {
         "full_name": "Full Name",
         "email": "Email",
@@ -215,6 +265,7 @@ def validate_candidate_info(info: Dict[str, Any]) -> Dict[str, Any]:
         "tech_stack": "Tech Stack"
     }
     
+    # Check for missing mandatory fields
     missing_fields = []
     for field, display_name in mandatory_fields.items():
         if not info.get(field, "").strip():
@@ -228,16 +279,17 @@ def validate_candidate_info(info: Dict[str, Any]) -> Dict[str, Any]:
     if not "@" in email or not "." in email:
         raise ValueError("Please enter a valid email address")
     
-    # Validate phone number (basic check)
+    # Validate phone number format (basic check)
     phone = info.get("phone", "").strip()
     if not phone.replace("-", "").replace("+", "").replace(" ", "").isdigit():
         raise ValueError("Please enter a valid phone number")
     
-    # Validate tech stack
+    # Validate and format tech stack
     tech_stack = [tech.strip() for tech in info.get("tech_stack", "").split(",") if tech.strip()]
     if not tech_stack:
         raise ValueError("Please enter at least one technology in the tech stack")
     
+    # Create validated and formatted info dictionary
     validated_info = {
         "full_name": info.get("full_name", "").strip(),
         "email": email,

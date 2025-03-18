@@ -1,3 +1,14 @@
+"""
+TalentScout - AI-Powered Technical Interview Assistant
+
+This module implements a Streamlit-based web application for conducting technical interviews.
+It provides an interactive interface for gathering candidate information, conducting technical
+assessments, and analyzing responses using AI-powered tools.
+
+The application uses Streamlit for the UI and integrates with Hugging Face's API for
+AI-powered question generation and response analysis.
+"""
+
 import streamlit as st
 from utils import (
     get_huggingface_client,
@@ -6,7 +17,7 @@ from utils import (
     generate_follow_up_question,
     validate_candidate_info
 )
-import os
+
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -19,7 +30,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize session state
+# Initialize session state variables for managing interview flow
+# messages: Stores the conversation history
+# current_question: Tracks the current technical question being asked
+# candidate_info: Stores validated candidate information
+# interview_stage: Tracks the current stage of the interview (initial/technical)
+# greeting_sent: Ensures greeting is sent only once
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "current_question" not in st.session_state:
@@ -31,7 +47,7 @@ if "interview_stage" not in st.session_state:
 if "greeting_sent" not in st.session_state:
     st.session_state.greeting_sent = False
 
-# Check for API key
+# Check for API key and initialize Hugging Face client
 try:
     client = get_huggingface_client()
 except ValueError as e:
@@ -54,6 +70,7 @@ with st.sidebar:
     st.header("Candidate Information")
     
     if st.session_state.interview_stage == "initial":
+        # Candidate information form with required fields marked with *
         candidate_info = {
             "full_name": st.text_input("Full Name *", placeholder="John Doe"),
             "email": st.text_input("Email *", placeholder="john.doe@example.com"),
@@ -66,6 +83,7 @@ with st.sidebar:
         
         if st.button("Start Interview"):
             try:
+                # Validate and store candidate information
                 validated_info = validate_candidate_info(candidate_info)
                 st.session_state.candidate_info = validated_info
                 st.session_state.interview_stage = "technical"
@@ -74,6 +92,7 @@ with st.sidebar:
                 st.error(str(e))
     
     elif st.session_state.interview_stage == "technical":
+        # Display current candidate information during the interview
         st.write("### Current Candidate")
         st.write(f"**Name:** {st.session_state.candidate_info['full_name']}")
         st.write(f"**Position:** {st.session_state.candidate_info['position']}")
@@ -81,6 +100,7 @@ with st.sidebar:
         st.write(f"**Tech Stack:** {', '.join(st.session_state.candidate_info['tech_stack'])}")
         
         if st.button("End Interview"):
+            # Reset all session state variables for a new interview
             st.session_state.interview_stage = "initial"
             st.session_state.messages = []
             st.session_state.current_question = None
@@ -90,12 +110,12 @@ with st.sidebar:
 
 # Main interview interface
 if st.session_state.interview_stage == "technical":
-    # Display chat messages
+    # Display chat messages with appropriate styling
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.write(message["content"])
     
-    # Send greeting message if not sent yet
+    # Send initial greeting message if not sent yet
     if not st.session_state.greeting_sent:
         greeting = f"""Hello {st.session_state.candidate_info['full_name']}! 👋
 
@@ -120,7 +140,7 @@ Let's begin!"""
         st.session_state.greeting_sent = True
         st.experimental_rerun()
     
-    # Generate initial questions if none exist
+    # Generate initial technical questions if none exist
     if not st.session_state.current_question:
         questions = generate_technical_questions(
             tech_stack=st.session_state.candidate_info["tech_stack"],
@@ -143,25 +163,25 @@ Let's begin!"""
             })
             st.experimental_rerun()
         
-        # Add candidate's response to chat
+        # Add candidate's response to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
         
-        # Analyze the response
+        # Analyze the candidate's response
         analysis = analyze_candidate_response(prompt, st.session_state.current_question)
         
-        # Generate follow-up question
+        # Generate a relevant follow-up question based on the response
         follow_up = generate_follow_up_question(prompt, {
             "tech_stack": st.session_state.candidate_info["tech_stack"],
             "current_question": st.session_state.current_question
         })
         
-        # Update messages with analysis and follow-up
+        # Update chat with analysis and follow-up question
         st.session_state.messages.append({
             "role": "assistant",
             "content": f"**Analysis of your response:**\n{analysis['analysis']}\n\n**Follow-up question:**\n{follow_up}"
         })
         
-        # Update current question
+        # Update current question for next iteration
         st.session_state.current_question = follow_up
         
         st.experimental_rerun()
