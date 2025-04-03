@@ -107,7 +107,6 @@ def evaluate_answer_satisfaction(response: str, question: str) -> Dict[str, Any]
     Returns:
         Dict[str, Any]: Evaluation results including:
             - is_satisfactory (bool): Whether the answer is satisfactory
-            - score (int): Score from 0-10
             - feedback (str): Detailed feedback
     """
     prompt = f"""Evaluate the candidate's response to the technical question:

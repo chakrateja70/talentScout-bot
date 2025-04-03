@@ -240,7 +240,7 @@ Let's begin!"""
 {analysis['analysis']}
 
 **Evaluation:**
-- Score: {evaluation['score']}/10
+
 - Feedback: {evaluation['feedback']}
 
 **Next Question:**
